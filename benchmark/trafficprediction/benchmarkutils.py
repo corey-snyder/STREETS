@@ -306,8 +306,8 @@ def load_arima_data(training_dates,
                     n_samples):
     #identify three days of warm start data
     test_date_idx = np.nonzero(np.array(testing_dates)==test_date)[0][0]
-    if test_date_idx < 3:
-        training_train_dates = training_dates[test_date_idx-3:]
+    if test_date_idx < 2:
+        training_train_dates = training_dates[test_date_idx-2:]
     else:
         train_dates = []
     training_test_dates = testing_dates[:test_date_idx]
@@ -327,8 +327,10 @@ def load_arima_data(training_dates,
                                                 horizon,
                                                 n_samples,
                                                 {})
-    y_train = np.concatenate((y_data_train_arima, y_data_test_arima[:history]))
-    y_test = y_data_test_arima[history:]
+    y_train = np.concatenate((y_data_train_arima, y_data_test_arima[:history])).astype(float)
+    y_test = y_data_test_arima[history:].astype(float)
+    y_train[y_train == 0] += 1e-2
+    y_test[y_test == 0] += 1e-2
     return y_train, y_test
 
 def mae(x, y):
