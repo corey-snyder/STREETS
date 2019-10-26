@@ -18,15 +18,12 @@ ROOT_DIR = os.path.abspath("Mask_RCNN/")
 # Import Mask_RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
+RETRAINED_MODEL_PATH = os.path.join(ROOT_DIR, "detectorweights.h5")
 DATA_PATH = '../../data'
 
 from mrcnn import utils
 import mrcnn.model as modellib
 import coco
-
-if not os.path.exists(COCO_MODEL_PATH):
-    utils.download_trained_weights(COCO_MODEL_PATH)
 
 class InferenceConfig(coco.CocoConfig):
     # Set batch size to 1 since we'll be running inference on
@@ -34,7 +31,9 @@ class InferenceConfig(coco.CocoConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     DETECTION_MIN_CONFIDENCE = 0.7
-def extract_json_points_polygons(label_dict, image_name):
+    NUM_CLASSES = 1+1
+    RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256)
+def extract_json_points_polygons(label_dict,image_name):
     label_polygons = [] #shapely.geometry.Polygon objects
     label_polygon_points = [] #List of (x_pts,y_pts) tuple for each polygon
     label_key = None
@@ -47,12 +46,14 @@ def extract_json_points_polygons(label_dict, image_name):
         reg_shape = region_dict[region_key]['shape_attributes']
         if reg_shape['name'] == 'polygon':
             n_pts = len(reg_shape['all_points_x'])
-            polygon_points = [(reg_shape['all_points_x'][i],reg_shape['all_points_y'][i]) for i in range(n_pts)]
-            label_polygon_points.append((reg_shape['all_points_x'],reg_shape['all_points_y']))
-            label_polygons.append(Polygon(polygon_points))
+            if n_pts > 2:
+                polygon_points = [(reg_shape['all_points_x'][i],reg_shape['all_points_y'][i]) for i in range(n_pts)]
+                label_polygon_points.append((reg_shape['all_points_x'],reg_shape['all_points_y']))
+                label_polygons.append(Polygon(polygon_points))
         else:
             print('Unknown shape encountered.')
     return label_polygons,label_polygon_points
+
 def polygon_to_ndarray(polygon,n_rows,n_cols):
     ret_array = np.zeros((n_rows,n_cols),dtype=bool)
     min_c,min_r,max_c,max_r = polygon.bounds
@@ -66,31 +67,15 @@ def polygon_to_ndarray(polygon,n_rows,n_cols):
     return ret_array
 
 config = InferenceConfig()
-config.display() #display configurations
-class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
-               'bus', 'train', 'truck', 'boat', 'traffic light',
-               'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
-               'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
-               'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
-               'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
-               'kite', 'baseball bat', 'baseball glove', 'skateboard',
-               'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
-               'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-               'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
-               'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
-               'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
-               'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
-               'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
-               'teddy bear', 'hair drier', 'toothbrush']
-traffic_ids = [2, 3, 4, 6, 8] #relevant class indices
+config.display()
 
 # Create model object in inference mode.
 model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
 
 # Load weights trained on MS-COCO
-model.load_weights(COCO_MODEL_PATH, by_name=True)
+model.load_weights(RETRAINED_MODEL_PATH, by_name=True)
 assert len(sys.argv) == 3,"Missing arguments"
-mode = sys.argv[1] #train or val
+mode = sys.argv[1]
 tau = float(sys.argv[2]) #IoU threshold
 
 with open(os.path.join(DATA_PATH, 'vehicleannotations', 'annotations', 'vehicle-annotations.json'), 'r') as f:
@@ -99,6 +84,7 @@ with open(os.path.join(DATA_PATH, 'train-val-split.json'), 'r') as f:
     train_val_split = json.load(f)
 
 image_dir = os.path.join(DATA_PATH, 'vehicleannotations', 'images')
+
 AE = []
 APE = []
 ADE = []
@@ -106,6 +92,7 @@ ADPE = []
 n_tp = 0
 total_detect = 0
 total_gt = 0
+
 for f in tqdm(os.listdir(image_dir)):
     if f in train_val_split[mode]:
         image_name = f
@@ -135,7 +122,7 @@ for f in tqdm(os.listdir(image_dir)):
         for j in range(masks.shape[2]):
             curr_mask = masks[:,:,j]
             curr_size = np.sum(curr_mask)
-            if curr_size > 0 and results['class_ids'][j] in traffic_ids:
+            if curr_size > 0:
                 inter = np.sum(np.logical_and(curr_mask, binary_mask))
                 if inter/curr_size:
                     n_detected += 1
