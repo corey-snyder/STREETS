@@ -1,6 +1,17 @@
 # STREETS
 ## A Novel Camera Network Dataset for Traffic Flow
-This is the code repository for "Corey Snyder and Minh N. Do, Streets: A novel camera  network  dataset  for  traffic  flow, Accepted to Thirty-third Conference on Neural Information Processing Systems, 2019".
+If you find this repository helpful, please cite:
+
+`@incollection{NIPS2019_9213,
+title = {STREETS: A Novel Camera Network Dataset for Traffic Flow},
+author = {Snyder, Corey and Do, Minh},
+booktitle = {Advances in Neural Information Processing Systems 32},
+editor = {H. Wallach and H. Larochelle and A. Beygelzimer and F. d'Alch\'{e}-Buc and E. Fox and R. Garnett},
+pages = {10242--10253},
+year = {2019},
+publisher = {Curran Associates, Inc.},
+url = {http://papers.nips.cc/paper/9213-streets-a-novel-camera-network-dataset-for-traffic-flow.pdf}
+}`
 
 ## Requirements
 This work was implemented with the following packages and others included in `requirements.txt`.
