@@ -180,11 +180,11 @@ def build_feature_vector_chunk(idx, sensor_id, sensor_data, history, use_state, 
     chunk = []
     for h in range(history):
         if len(max_dict):
-            chunk.append(sensor_data[idx-history]['count']/max_dict[sensor_id])
+            chunk.append(sensor_data[idx-h]['count']/max_dict[sensor_id])
         else:
-            chunk.append(sensor_data[idx-history]['count'])
+            chunk.append(sensor_data[idx-h]['count'])
         if use_state:
-            chunk.append(sensor_data[idx-history]['state'])
+            chunk.append(sensor_data[idx-h]['state'])
     return chunk
 
 def convert_time_of_day(idx, n_samples):
