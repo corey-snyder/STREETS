@@ -11,7 +11,7 @@ matplotlib==3.0.1
 h5py==2.10.0
 numpy==1.17.2
 imgaug==0.3.0
-ipython==7.9.0
+ipython==7.16.3
 pycocotools==2.0.0
 scikit_learn==0.21.3
 Shapely==1.6.4.post2
