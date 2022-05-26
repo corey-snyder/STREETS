@@ -16,4 +16,4 @@ pycocotools==2.0.0
 scikit_learn==0.21.3
 Shapely==1.6.4.post2
 skimage==0.0
-tensorflow==2.0.3
+tensorflow==2.7.2
